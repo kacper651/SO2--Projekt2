@@ -12,7 +12,7 @@ std::mutex dockMutex;
 std::mutex printMutex;
 std::mutex cargoMutex;
 
-std::queue<std::pair<std::string, int>> warehouse;
+std::queue <std::pair<std::string, int>> warehouse;
 
 const int NUM_WORKERS = 20;
 const int NUM_TRUCKS = 5;
@@ -24,10 +24,10 @@ struct Cargo {
     std::string state;
 };
 
-std::unordered_map<std::string, Cargo> cargoStates; // Map to store cargo states
+std::unordered_map <std::string, Cargo> cargoStates;
 
-void printMessage(const std::string& message, int line) {
-    std::unique_lock<std::mutex> lock(printMutex);
+void printMessage(const std::string &message, int line) {
+    std::unique_lock <std::mutex> lock(printMutex);
     move(line, 0);
     clrtoeol();
     printw("%s", message.c_str());
@@ -42,7 +42,7 @@ int getRandomCargoSize() {
 }
 
 void printWarehouseStatus(int line) {
-    std::unique_lock<std::mutex> lock(printMutex);
+    std::unique_lock <std::mutex> lock(printMutex);
     move(line, 0);
     clrtoeol();
     printw("Warehouse Items: %zu", warehouse.size());
@@ -50,7 +50,7 @@ void printWarehouseStatus(int line) {
 }
 
 void printWorkerHeader(int line) {
-    std::unique_lock<std::mutex> lock(printMutex);
+    std::unique_lock <std::mutex> lock(printMutex);
     move(line, 0);
     clrtoeol();
     printw("Worker ID\tState\n");
@@ -58,11 +58,11 @@ void printWorkerHeader(int line) {
 }
 
 void printCargoTable(int line) {
-    std::unique_lock<std::mutex> lock(printMutex);
+    std::unique_lock <std::mutex> lock(printMutex);
     move(line, 0);
     clrtoeol();
     printw("Cargo ID\tState\n");
-    for (const auto& cargo : cargoStates) {
+    for (const auto &cargo: cargoStates) {
         printw("%s\t%s\n", cargo.first.c_str(), cargo.second.state.c_str());
     }
     refresh();
@@ -75,7 +75,7 @@ void worker(int id) {
         std::pair<std::string, int> cargo;
 
         {
-            std::lock_guard<std::mutex> lock(dockMutex);
+            std::lock_guard <std::mutex> lock(dockMutex);
             if (!warehouse.empty()) {
                 cargo = warehouse.front();
                 warehouse.pop();
@@ -86,23 +86,24 @@ void worker(int id) {
             std::string cargoId = cargo.first;
 
             {
-                std::lock_guard<std::mutex> lock(cargoMutex);
-                cargoStates[cargoId] = { cargoId, "New" };
+                std::lock_guard <std::mutex> lock(cargoMutex);
+                cargoStates[cargoId] = {cargoId, "New"};
             }
 
             printMessage("Worker " + std::to_string(id) + "\t is processing cargo: " + cargo.first, line);
             std::this_thread::sleep_for(std::chrono::milliseconds(800 * cargo.second));
 
             if (cargo.second > FORKLIFT_CARGO_RATIO * MAX_CARGO_SIZE) {
-                std::lock_guard<std::mutex> lock(cargoMutex);
+                std::lock_guard <std::mutex> lock(cargoMutex);
                 cargoStates[cargoId].state = "Moving";
 
-                printMessage("Worker " + std::to_string(id) + "\t is using the forklift to move cargo: " + cargo.first, line);
+                printMessage("Worker " + std::to_string(id) + "\t is using the forklift to move cargo: " + cargo.first,
+                             line);
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
 
             {
-                std::lock_guard<std::mutex> lock(cargoMutex);
+                std::lock_guard <std::mutex> lock(cargoMutex);
                 cargoStates[cargoId].state = "Processing";
             }
 
@@ -110,7 +111,7 @@ void worker(int id) {
             std::this_thread::sleep_for(std::chrono::milliseconds(500 * cargo.second));
 
             {
-                std::lock_guard<std::mutex> lock(cargoMutex);
+                std::lock_guard <std::mutex> lock(cargoMutex);
                 cargoStates.erase(cargoId);
             }
         } else {
@@ -133,7 +134,7 @@ void truck(int id) {
         int cargoSize = getRandomCargoSize();
 
         {
-            std::lock_guard<std::mutex> lock(dockMutex);
+            std::lock_guard <std::mutex> lock(dockMutex);
             printMessage("Delivery Truck " + std::to_string(id) + " has accessed a dock.", line);
             std::this_thread::sleep_for(std::chrono::milliseconds(200));
 
@@ -144,7 +145,7 @@ void truck(int id) {
                 cargo.state = "Unloaded";
 
                 {
-                    std::lock_guard<std::mutex> lock(cargoMutex);
+                    std::lock_guard <std::mutex> lock(cargoMutex);
                     warehouse.emplace(cargoId, getRandomCargoSize());
                     cargoStates[cargoId] = cargo;
                 }
@@ -165,8 +166,8 @@ int main() {
     initscr();
     clear();
 
-    std::vector<std::thread> workers;
-    std::vector<std::thread> trucks;
+    std::vector <std::thread> workers;
+    std::vector <std::thread> trucks;
 
     int line = 0;
     for (int i = 1; i <= NUM_WORKERS; ++i) {
@@ -182,11 +183,11 @@ int main() {
     printWorkerHeader(0);
     printCargoTable(NUM_WORKERS + NUM_TRUCKS + 7);
 
-    for (auto& workerThread : workers) {
+    for (auto &workerThread: workers) {
         workerThread.join();
     }
 
-    for (auto& truckThread : trucks) {
+    for (auto &truckThread: trucks) {
         truckThread.join();
     }
 
