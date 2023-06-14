@@ -49,6 +49,14 @@ void printWarehouseStatus(int line) {
     refresh();
 }
 
+void printWorkerHeader(int line) {
+    std::unique_lock<std::mutex> lock(printMutex);
+    move(line, 0);
+    clrtoeol();
+    printw("Worker ID\tState\n");
+    refresh();
+}
+
 void printCargoTable(int line) {
     std::unique_lock<std::mutex> lock(printMutex);
     move(line, 0);
@@ -82,14 +90,14 @@ void worker(int id) {
                 cargoStates[cargoId] = { cargoId, "New" };
             }
 
-            printMessage("Worker " + std::to_string(id) + " is processing cargo: " + cargo.first, line);
+            printMessage("Worker " + std::to_string(id) + "\t is processing cargo: " + cargo.first, line);
             std::this_thread::sleep_for(std::chrono::milliseconds(800 * cargo.second));
 
             if (cargo.second > FORKLIFT_CARGO_RATIO * MAX_CARGO_SIZE) {
                 std::lock_guard<std::mutex> lock(cargoMutex);
                 cargoStates[cargoId].state = "Moving";
 
-                printMessage("Worker " + std::to_string(id) + " is using the forklift to move cargo: " + cargo.first, line);
+                printMessage("Worker " + std::to_string(id) + "\t is using the forklift to move cargo: " + cargo.first, line);
                 std::this_thread::sleep_for(std::chrono::milliseconds(500));
             }
 
@@ -98,7 +106,7 @@ void worker(int id) {
                 cargoStates[cargoId].state = "Processing";
             }
 
-            printMessage("Worker " + std::to_string(id) + " is further processing cargo: " + cargo.first, line);
+            printMessage("Worker " + std::to_string(id) + "\t is further processing cargo: " + cargo.first, line);
             std::this_thread::sleep_for(std::chrono::milliseconds(500 * cargo.second));
 
             {
@@ -106,10 +114,10 @@ void worker(int id) {
                 cargoStates.erase(cargoId);
             }
         } else {
-            printMessage("Worker " + std::to_string(id) + " is taking a break.", line);
+            printMessage("Worker " + std::to_string(id) + "\t is taking a break.", line);
             std::this_thread::sleep_for(std::chrono::milliseconds(2000));
         }
-
+        printWorkerHeader(0);
         printWarehouseStatus(NUM_WORKERS + NUM_TRUCKS + 5);
         printCargoTable(NUM_WORKERS + NUM_TRUCKS + 7);
     }
@@ -147,7 +155,7 @@ void truck(int id) {
         }
 
         printMessage("Delivery Truck " + std::to_string(id) + " has released the dock.", line);
-
+        printWorkerHeader(0);
         printWarehouseStatus(NUM_WORKERS + NUM_TRUCKS + 5);
         printCargoTable(NUM_WORKERS + NUM_TRUCKS + 7);
     }
@@ -171,6 +179,7 @@ int main() {
         trucks.emplace_back(truck, i);
     }
 
+    printWorkerHeader(0);
     printCargoTable(NUM_WORKERS + NUM_TRUCKS + 7);
 
     for (auto& workerThread : workers) {
